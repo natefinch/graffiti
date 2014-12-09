@@ -49,4 +49,9 @@ that run-on-save can work for your favorite editor, something like the following
 Then whenever you save, graffiti will update the struct tags in this file.
 
 
+I would also like to support giving name translations (to support something like
+mgo's Id to _id for bson), as well as possibly some way to specify when to use
+omitempty.
 
+The major problem with these two features is how to sanely specify them on the
+command line.
