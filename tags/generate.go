@@ -113,7 +113,7 @@ func (v visitor) gen(name string) string {
 		for i, t := range v.Tags {
 			vals[i] = fmt.Sprintf("%s:%q", t, name)
 		}
-		return strings.Join(vals, " ")
+		return "`" + strings.Join(vals, " ") + "`"
 	}
 	// no tages means we have a template
 	buf := &bytes.Buffer{}
@@ -121,5 +121,5 @@ func (v visitor) gen(name string) string {
 	if err != nil {
 		panic(err)
 	}
-	return buf.String()
+	return "`" + buf.String() + "`"
 }
