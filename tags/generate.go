@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/build"
+	"go/format"
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"io/ioutil"
 	"os"
 	"strings"
 	"text/template"
@@ -15,54 +18,87 @@ import (
 // Options contains the data needed to generate tags for a target (file or
 // package).
 type Options struct {
-	Target    string
-	IsPackage bool
-	Tags      []string
-	Template  *template.Template
-	Mapping   map[string]string
-	Types     []string
+	// Target is the file or directory to parse, or current dir if empty.
+	Target string
+	// Tags contains schema names like json or yaml.
+	Tags []string
+	// Template is used to generate the contents of the struct tag field if Tags is empty.
+	Template *template.Template
+	// Mapping contains field name conversions. If a field isn't in the map, lowercase of field name is used.
+	Mapping map[string]string
+	// Types to generate tags for, if empty, all structs will have tags generated.
+	Types []string
+	// DryRun indicates whether we should simply write to StdOut rather than writing to the files.
+	DryRun bool
 }
 
 // Generate generates tags according to the given options.
 func Generate(o Options) error {
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, o.Target, nil, parser.ParseComments)
+	i, err := os.Stat(o.Target)
 	if err != nil {
-		return fmt.Errorf("error reading file: %s", err)
-	}
-	if err := walk(visitor(o), f); err != nil {
 		return err
 	}
-
-	c := printer.Config{Mode: printer.RawFormat}
-	if err := c.Fprint(os.Stdout, fset, f); err != nil {
-		return fmt.Errorf("error printing output: %s", err)
+	if !i.IsDir() {
+		return genfile(o, o.Target)
 	}
 
-	return nil
-}
-
-// walk is a function that wraps ast.Walk in a defer recover. This is because
-// ast.Walk doesn't give us a way to bail out with an error, so we have to panic
-// instead.
-func walk(v ast.Visitor, f *ast.File) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			if e, ok := r.(error); ok {
-				err = e
-			} else {
-				err = fmt.Errorf("unexpected panic while parsing file: %v", r)
-			}
+	p, err := build.Default.ImportDir(o.Target, 0)
+	if err != nil {
+		return err
+	}
+	for _, f := range p.GoFiles {
+		if err := genfile(o, f); err != nil {
+			return err
 		}
-	}()
-	ast.Walk(v, f)
+	}
 	return nil
 }
 
-type visitor Options
+// genfile generates struct tags for the given file.
+func genfile(o Options, file string) error {
+	fset := token.NewFileSet()
+	n, err := parser.ParseFile(fset, file, nil, parser.ParseComments)
+	if err != nil {
+		return err
+	}
+	v := &visitor{Options: o}
+	ast.Walk(v, n)
+	if v.err != nil {
+		return err
+	}
+	if !v.changed {
+		return nil
+	}
+	c := printer.Config{Mode: printer.RawFormat}
+	buf := &bytes.Buffer{}
+	if err := c.Fprint(buf, fset, n); err != nil {
+		return fmt.Errorf("error printing output: %s", err)
+	}
+	b, err := format.Source(buf.Bytes())
+	if err != nil {
+		return err
+	}
+	if o.DryRun {
+		_, err := fmt.Fprintf(os.Stdout, "%s\n", b)
+		return err
+	}
+	return ioutil.WriteFile(file, b, 0644)
+}
 
-func (v visitor) Visit(n ast.Node) ast.Visitor {
-	if n == nil {
+// visitor is a wrapper around Options that implement the ast.Visitor interface
+// and some helper methods.  Since ast.Walk doesn't let you return values,
+// we instead set the return values in this struct.
+type visitor struct {
+	Options
+	// changed is true if the AST was changed by our code.
+	changed bool
+	// err is non-nil if there was an error processing the file.
+	err error
+}
+
+// Visit implements ast.Visitor and does the meat of the tag generation.
+func (v *visitor) Visit(n ast.Node) ast.Visitor {
+	if n == nil || v.err != nil {
 		return nil
 	}
 	if t, ok := n.(*ast.TypeSpec); ok {
@@ -83,13 +119,21 @@ func (v visitor) Visit(n ast.Node) ast.Visitor {
 				if f.Tag == nil {
 					f.Tag = &ast.BasicLit{}
 				}
-				f.Tag.Value = v.gen(name)
+				val, err := v.gen(name)
+				if err != nil {
+					v.err = err
+					return nil
+				}
+				f.Tag.Value = val
+				v.changed = true
 			}
 		}
 	}
 	return v
 }
 
+// shouldGen reports whether graffiti should generate tags for the struct with
+// the given name.
 func (v visitor) shouldGen(name string) bool {
 	if len(v.Types) == 0 {
 		return true
@@ -102,7 +146,9 @@ func (v visitor) shouldGen(name string) bool {
 	return false
 }
 
-func (v visitor) gen(name string) string {
+// gen creates the struct tag for the given field name, according to the options
+// set.
+func (v visitor) gen(name string) (string, error) {
 	if m, ok := v.Mapping[name]; ok {
 		name = m
 	} else {
@@ -113,13 +159,14 @@ func (v visitor) gen(name string) string {
 		for i, t := range v.Tags {
 			vals[i] = fmt.Sprintf("%s:%q", t, name)
 		}
-		return "`" + strings.Join(vals, " ") + "`"
+		return "`" + strings.Join(vals, " ") + "`", nil
 	}
-	// no tages means we have a template
+
+	// no tags means we have a template
 	buf := &bytes.Buffer{}
 	err := v.Template.Execute(buf, struct{ F string }{name})
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return "`" + buf.String() + "`"
+	return "`" + buf.String() + "`", nil
 }

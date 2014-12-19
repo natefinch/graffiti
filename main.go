@@ -31,58 +31,60 @@ func main() {
 
 func genCmd(base *cobra.Command) {
 	cmd := &cobra.Command{
-		Use:   "gen <target> <tags>",
-		Short: "Generate struct tags for structs in a file.",
+		Use:   "gen <tags> [target]",
+		Short: "Generate struct tags for go structs in a file or directory.",
 		Long:  genUsage,
 	}
 	var types, mapping string
-	var isTempl, isPkg bool
+	var isTempl, dryRun bool
 	cmd.Flags().StringVarP(&types, "types", "t", "", "Generate tags only for these types (comma separated list).")
 	cmd.Flags().StringVarP(&mapping, "map", "m", "", "Map field names to alternate tag names (see help mappings).")
 	cmd.Flags().BoolVarP(&isTempl, "gotemplate", "g", false, "If set, tags is a go template (see help templates).")
-	cmd.Flags().BoolVarP(&isPkg, "pkg", "p", false, "If set, target is a package (see help packages).")
+	cmd.Flags().BoolVarP(&dryRun, "dryrun", "d", false, "If set, changes are written to stdout instead of to the files.")
 
 	base.AddCommand(cmd)
 	topics(cmd)
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
-		// Target & tags are required.
-		if len(args) != 2 {
+		// Tags is required, target is optional
+		if len(args) != 2 && len(args) != 1 {
 			cmd.Usage()
 			return
 		}
 
-		opt := tags.Options{
-			Target:    args[0],
-			IsPackage: isPkg,
+		opt := tags.Options{DryRun: dryRun}
+
+		if len(args) > 1 {
+			opt.Target = args[1]
+		} else {
+			opt.Target = "."
 		}
+
 		if mapping != "" {
 			m, err := makeMap(mapping)
 			if err != nil {
 				fmt.Println(err)
-				cmd.Usage()
 				return
 			}
 			opt.Mapping = m
 		}
+
 		if types != "" {
 			opt.Types = strings.Split(types, ",")
 		}
 
 		if !isTempl {
-			opt.Tags = strings.Split(args[1], ",")
+			opt.Tags = strings.Split(args[0], ",")
 		} else {
-			t, err := template.New("tag").Parse(args[1])
+			t, err := template.New("tag template").Parse(args[1])
 			if err != nil {
 				fmt.Println(err)
-				cmd.Usage()
 				return
 			}
 			opt.Template = t
 		}
 		if err := tags.Generate(opt); err != nil {
 			fmt.Println(err)
-			cmd.Usage()
 			return
 		}
 	}
@@ -128,10 +130,5 @@ func topics(base *cobra.Command) {
 		Use:   "templates",
 		Short: "how to use templated output",
 		Long:  gotemplate,
-	})
-	base.AddCommand(&cobra.Command{
-		Use:   "packages",
-		Short: "how to generate tags for package(s)",
-		Long:  packages,
 	})
 }

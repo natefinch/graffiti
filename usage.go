@@ -1,12 +1,12 @@
 package main
 
 const (
-	genUsage = `
-By default, target is a file, and tags is a comma-separated list of tag names.
-The value for a field's tag is the lowercase of the field name (only exported
-fields have tags generated). 
+	genUsage = ` By default tags is a comma-separated list of tag names.
+Target can be a file or directory. If no target is given, all go files in the
+current directory are processed. The value for a field's tag is the lowercase of
+the field name (only exported fields have tags generated).
 
-For example, 'graffiti gen foo.go yaml,json' will transform the following
+For example, 'graffiti gen yaml,json foo.go' will transform the following
 struct:
 
 type foo struct {
@@ -28,23 +28,11 @@ type foo struct {
 
 `
 
-	packages = ` By default, graffiti gen expects to be given a single filename
-that contains the types to generate tags for.  If you pass the -p (--package)
-flag, it instead expects to be given the name of a package. This should be the
-same format as the go tool uses.  See 'go help packages' for full details.
-
-Example:
-
-	graffiti gen -p github.com/foo/bar/... json
-
-This would generate json tags for all types in all packages on your local
-machine with import paths that start with github.com/foo/bar/.
-`
 	mappings = `By default, graffiti creates a struct tag for each exported
 field in the struct that is simple the lowercase of the field name.  For example
 running this command:
 
- 	graffiti gen foo.go json 
+ 	graffiti gen json foo.go 
 
 would produce output like this:
 
@@ -63,7 +51,7 @@ obviously cannot be directly translated from a field name, so you need a struct
 tag to change the name of the serialized field to _id.  To tell graffiti to make
 this kind of a tag, you'd use a command line like this:
 
-	graffiti gen foo.go bson -m ID=_id
+	graffiti gen bson foo.go -m ID=_id
 
 which would produce output like this:
 
@@ -77,19 +65,19 @@ normal behavior of simply being lowercased.
 
 To make multiple translations, just separate them with a semicolon thusly:
 
-	graffiti gen foo.go bson -m ID=_id;Subject=title
+	graffiti gen bson foo.go -m ID=_id;Subject=title
 
 Note that the entire right hand side of a mapping is used as the output of the
 tag value, so you can specify more than just the name, for example adding
 ",omitempty" to json or yaml fields.
 
-	graffiti gen foo.go json -m Value=value,omitempty
+	graffiti gen json foo.go -m Value=value,omitempty
 `
 
 	gotemplate = `By default, graffiti takes as its last argument a comma-separated list of tag
 names which will be used to generate the tags. The value for the tags is the
 lowercase of the field name (only exported fields have tags generated). For
-example, 'graffiti file foo.go yaml,json' will transform the following struct:
+example, 'graffiti gen yaml,json foo.go' will transform the following struct:
 
 	type foo struct {
 		ID string
@@ -103,7 +91,7 @@ into this:
 		Name string ` + "`" + `yaml:"name" json:"name"` + "`" + `
 	}
 
-If you want complete control of the output, you can use the -g (--template)
+If you want complete control of the output, you can use the -g (--gotemplate)
 flag, in which case you pass the command a Go template that is used to generate
 the tags for the field.  In the template, {{.F}} will be populated with the
 lowercase name of the field, or the mapped value if using -map (see help
@@ -113,7 +101,7 @@ double quotes inside the value.
 
 For example:
 
-	graffiti file foo.go -template 'json:"{{.F}}"'
+	graffiti gen --g 'json:"{{.F}}"' foo.go
 
 would produce the following from the same above struct:
 
