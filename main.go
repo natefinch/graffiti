@@ -21,7 +21,7 @@ func main() {
 
 	// Order here determines order in help output.
 	genCmd(base)
-	runCmd(base)
+	//runCmd(base)
 	topics(base)
 
 	if err := base.Execute(); err != nil {

@@ -1,30 +1,15 @@
 package main
 
 const (
-	genUsage = ` By default tags is a comma-separated list of tag names.
-Target can be a file or directory. If no target is given, all go files in the
-current directory are processed. The value for a field's tag is the lowercase of
-the field name (only exported fields have tags generated).
+	genUsage = `
+Generates tags for a specific target (file or directory).
 
-For example, 'graffiti gen yaml,json foo.go' will transform the following
-struct:
-
-type foo struct {
-	ID string
-	Name string
-}
-
-into this:
-
-type foo struct {
-	ID string ` + "`" + `yaml:"id" json:"id"` + "`" + `
-	Name string ` + "`" + `yaml:"name" json:"name"` + "`" + `
-}
-
-`
+If no target is given, all go files in the current directory are processed. By
+default tags is a comma-separated list of schema names like json or yaml. The
+value for a field's tag is the lowercase of the field name. Only exported fields
+have tags generated. `
 
 	runUsage = `
-
 
 `
 
@@ -34,7 +19,13 @@ running this command:
 
  	graffiti gen json foo.go 
 
-would produce output like this:
+If foo.go contains this struct:
+
+ 	type foo struct {
+ 		Name string
+ 	}
+
+The command would produce output like this:
 
  	type foo struct {
  		Name string ` + "`" + `json:"name"` + "`" + `
@@ -57,7 +48,7 @@ which would produce output like this:
 
  	type foo struct {
  		ID string  ` + "`" + `bson:"_id"` + "`" + `
- 		Nae string ` + "`" + `bson:"name"` + "`" + `
+ 		Name string ` + "`" + `bson:"name"` + "`" + `
  	}
 
 Note that all fields which don't match a key in the mapping default to the

@@ -5,18 +5,32 @@ Graffiti is a tool to automatically add struct tags to fields in your go code.
 
 This repo is still under heavy development and should not be used by anyone.
 
-By default, when given a list of schemas, graffiti will populate struct tags for
-all exported fields of structs in the given file, with the lowercase of the
-field name.
+```
+Usage: 
+  graffiti gen <tags> [target] [flags]
 
+Available Flags:
+  -d, --dryrun=false: If set, changes are written to stdout instead of to the files.
+  -g, --gotemplate=false: If set, tags is a go template (see help templates).
+      --help=false: help for gen
+  -m, --map="": Map field names to alternate tag names (see help mappings).
+  -t, --types="": Generate tags only for these types (comma separated list).
+```
+
+Generates tags for a specific target (file or directory).
+
+If no target is given, all go files in the current directory are processed. By
+default tags is a comma-separated list of schema names like json or yaml. The
+value for a field's tag is the lowercase of the field name. Only exported fields
+have tags generated. 
 
 For example, 
 
-`graffiti json,yaml foo.go`
+`graffiti gen json,yaml foo.go`
 
 where foo.go looks like this:
 
-```
+```go
 package foo
 
 type foo struct {
@@ -28,7 +42,7 @@ type foo struct {
 
 Will produce the following output:
 
-```
+```go
 package foo
 
 type foo struct {
@@ -38,20 +52,13 @@ type foo struct {
 }
 ```
 
-The idea is to support arbitrary tags (no need to bake-in the tag types), and
-allow for some simple rules, like tagging Id as _id for bson.
+### TODO
 
-Also, the idea is to support in-file tags with the appropriate command-line so
-that run-on-save can work for your favorite editor, something like the following:
+Working on support for a `graffiti run` command that will parse a go file and
+run graffiti commands embedded in comments in the file (much like go generate).
+Then, run-on-save can work for your favorite editor, something like the
+following:
 
 //graffiti: json,yaml
 
 Then whenever you save, graffiti will update the struct tags in this file.
-
-
-I would also like to support giving name translations (to support something like
-mgo's Id to _id for bson), as well as possibly some way to specify when to use
-omitempty.
-
-The major problem with these two features is how to sanely specify them on the
-command line.
