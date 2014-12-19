@@ -17,7 +17,7 @@ Available Flags:
   -t, --types="": Generate tags only for these types (comma separated list).
 ```
 
-Generates tags for a specific target (file or directory).
+Generates struct tags for a specific target (file or directory).
 
 If no target is given, all go files in the current directory are processed. By
 default tags is a comma-separated list of schema names like json or yaml. The
