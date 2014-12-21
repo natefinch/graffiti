@@ -5,16 +5,17 @@ Graffiti is a tool to automatically add struct tags to fields in your go code.
 
 This repo is still under heavy development and should not be used by anyone.
 
+### Gen
+
 ```
 Usage: 
   graffiti gen <tags> [target] [flags]
 
 Available Flags:
-  -d, --dryrun=false: If set, changes are written to stdout instead of to the files.
-  -g, --gotemplate=false: If set, tags is a go template (see help templates).
-      --help=false: help for gen
-  -m, --map="": Map field names to alternate tag names (see help mappings).
-  -t, --types="": Generate tags only for these types (comma separated list).
+  -d, --dryrun		If set, changes are written to stdout instead of to the files.
+  -f, --format <template>	If set, tags is a go template (see help templates).
+  -m, --map	<map>	Map field names to alternate tag names (see help mappings).
+  -t, --types		Generate tags only for these types (comma separated list).
 ```
 
 Generates struct tags for a specific target (file or directory).
@@ -52,13 +53,13 @@ type foo struct {
 }
 ```
 
-### TODO
+### Run (todo)
 
 Working on support for a `graffiti run` command that will parse a go file and
 run graffiti commands embedded in comments in the file (much like go generate).
 Then, run-on-save can work for your favorite editor, something like the
 following:
 
-//graffiti: json,yaml
+//graffiti: -t MyStruct json,yaml
 
 Then whenever you save, graffiti will update the struct tags in this file.

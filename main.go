@@ -13,6 +13,12 @@ import (
 )
 
 func main() {
+	if err := makeCmd().Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func makeCmd() *cobra.Command {
 	base := &cobra.Command{
 		Use:   "graffiti",
 		Short: "generate struct tags",
@@ -20,16 +26,13 @@ func main() {
 	}
 
 	// Order here determines order in help output.
-	genCmd(base)
-	//runCmd(base)
-	topics(base)
-
-	if err := base.Execute(); err != nil {
-		os.Exit(1)
-	}
+	base.AddCommand(genCmd())
+	base.AddCommand(runCmd())
+	addtopics(base)
+	return base
 }
 
-func genCmd(base *cobra.Command) {
+func genCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gen <tags> [target]",
 		Short: "Generate struct tags for go structs in a file or directory.",
@@ -42,14 +45,13 @@ func genCmd(base *cobra.Command) {
 	cmd.Flags().BoolVarP(&isTempl, "gotemplate", "g", false, "If set, tags is a go template (see help templates).")
 	cmd.Flags().BoolVarP(&dryRun, "dryrun", "d", false, "If set, changes are written to stdout instead of to the files.")
 
-	base.AddCommand(cmd)
-	topics(cmd)
+	addtopics(cmd)
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		// Tags is required, target is optional
 		if len(args) != 2 && len(args) != 1 {
-			cmd.Usage()
-			return
+			fmt.Printf("Wrong number of arguments, expected 1 or 2, got %d", len(args))
+			os.Exit(-1)
 		}
 
 		opt := tags.Options{DryRun: dryRun}
@@ -64,7 +66,7 @@ func genCmd(base *cobra.Command) {
 			m, err := makeMap(mapping)
 			if err != nil {
 				fmt.Println(err)
-				return
+				os.Exit(-1)
 			}
 			opt.Mapping = m
 		}
@@ -79,16 +81,17 @@ func genCmd(base *cobra.Command) {
 			t, err := template.New("tag template").Parse(args[1])
 			if err != nil {
 				fmt.Println(err)
-				return
+				os.Exit(-1)
 			}
 			opt.Template = t
 		}
 		if err := tags.Generate(opt); err != nil {
 			fmt.Println(err)
-			return
+			os.Exit(-1)
 		}
 	}
 
+	return cmd
 }
 
 func makeMap(val string) (map[string]string, error) {
@@ -104,23 +107,27 @@ func makeMap(val string) (map[string]string, error) {
 	return mapping, nil
 }
 
-func runCmd(base *cobra.Command) {
+func runCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run <file>",
 		Short: "Run graffiti commands embedded in a go file.",
 		Long:  runUsage,
 	}
-	base.AddCommand(cmd)
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		// File is required.
 		if len(args) != 1 {
-			cmd.Usage()
-			return
+			fmt.Printf("Wrong number of arguments, expected 1, got %d", len(args))
+			os.Exit(-1)
+		}
+		if err := run(args[0]); err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
 		}
 	}
+	return cmd
 }
 
-func topics(base *cobra.Command) {
+func addtopics(base *cobra.Command) {
 	base.AddCommand(&cobra.Command{
 		Use:   "mappings",
 		Short: "description of field name mappings",
