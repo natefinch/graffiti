@@ -61,28 +61,40 @@ func genfile(o Options, file string) error {
 	if err != nil {
 		return err
 	}
-	v := &visitor{Options: o}
-	ast.Walk(v, n)
-	if v.err != nil {
-		return err
-	}
-	if !v.changed {
-		return nil
-	}
-	c := printer.Config{Mode: printer.RawFormat}
-	buf := &bytes.Buffer{}
-	if err := c.Fprint(buf, fset, n); err != nil {
-		return fmt.Errorf("error printing output: %s", err)
-	}
-	b, err := format.Source(buf.Bytes())
+	b, err := gen(o, fset, n)
 	if err != nil {
 		return err
+	}
+	if b == nil {
+		// no changes
+		return nil
 	}
 	if o.DryRun {
 		_, err := fmt.Fprintf(os.Stdout, "%s\n", b)
 		return err
 	}
 	return ioutil.WriteFile(file, b, 0644)
+}
+
+func gen(o Options, fset *token.FileSet, n ast.Node) ([]byte, error) {
+	v := &visitor{Options: o}
+	ast.Walk(v, n)
+	if v.err != nil {
+		return nil, v.err
+	}
+	if !v.changed {
+		return nil, nil
+	}
+	c := printer.Config{Mode: printer.RawFormat}
+	buf := &bytes.Buffer{}
+	if err := c.Fprint(buf, fset, n); err != nil {
+		return nil, fmt.Errorf("error printing output: %s", err)
+	}
+	b, err := format.Source(buf.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
 }
 
 // visitor is a wrapper around Options that implement the ast.Visitor interface
