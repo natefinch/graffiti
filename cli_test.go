@@ -3,54 +3,60 @@ package main
 import (
 	"reflect"
 	"testing"
+	"text/template"
+
+	"github.com/natefinch/graffiti/tags"
 )
 
-func TestParseArgs(t *testing.T) {
-	args := []string{"-yaml, -json", "foo.go"}
-	info, err := parseArgs(args)
+func TestMakeOptions(t *testing.T) {
+	isTempl := false
+	dryRun := true
+	types := "foo,bar"
+	mapping := "ID=_id;Bar=notbar"
+	args := []string{"json,yaml", "foo.go"}
+	o, err := makeOptions(types, mapping, isTempl, dryRun, args)
 	if err != nil {
-		t.Errorf("unexpected error: %#v", err)
+		t.Fatalf("Unexpected error from makeOptions: %s", err)
 	}
-	expected := cliInfo{
-		filename: "foo.go",
-		tags: []tag{
-			tag{
-				Name: "yaml",
-			},
-			tag{
-				Name: "json",
-			},
-		},
+	expected := tags.Options{
+		Target:  "foo.go",
+		Tags:    []string{"json", "yaml"},
+		Mapping: map[string]string{"ID": "_id", "Bar": "notbar"},
+		Types:   []string{"foo", "bar"},
+		DryRun:  dryRun,
 	}
 
-	if !reflect.DeepEqual(expected, info) {
-		t.Errorf("expected %#v, got: %#v", expected, info)
+	if !reflect.DeepEqual(o, expected) {
+		t.Errorf("Expected:\n%#v\ngot:\n%#v", expected, o)
 	}
 }
 
-func TestParseMoreArgs(t *testing.T) {
-	args := []string{"-bson", "ID=_id;Bar=notbar", "-yaml", "foo.go"}
-	info, err := parseArgs(args)
+func TestMakeOptionsTemplate(t *testing.T) {
+	isTempl := true
+	dryRun := false
+	types := "foo,bar"
+	mapping := "ID=_id;Bar=notbar"
+	args := []string{`json:"{{.F}}"`}
+	o, err := makeOptions(types, mapping, isTempl, dryRun, args)
 	if err != nil {
-		t.Errorf("unexpected error: %#v", err)
+		t.Fatalf("Unexpected error from makeOptions: %s", err)
 	}
-	expected := cliInfo{
-		filename: "foo.go",
-		tags: []tag{
-			tag{
-				Name: "bson",
-				Map: map[string]string{
-					"ID":  "_id",
-					"Bar": "notbar",
-				},
-			},
-			tag{
-				Name: "yaml",
-			},
-		},
+	expected := tags.Options{
+		Target:  ".",
+		Mapping: map[string]string{"ID": "_id", "Bar": "notbar"},
+		Types:   []string{"foo", "bar"},
+		DryRun:  dryRun,
 	}
 
-	if !reflect.DeepEqual(expected, info) {
-		t.Errorf("expected %#v, got: %#v", expected, info)
+	expectedT := template.Must(template.New("tag template").Parse(`json:"{{.F}}"`))
+	gotT := o.Template
+	o.Template = nil
+
+	if !reflect.DeepEqual(o, expected) {
+		t.Errorf("Expected:\n%#v\ngot:\n%#v", expected, o)
+	}
+
+	if !reflect.DeepEqual(*gotT, *expectedT) {
+		t.Errorf("Expected:\n%#v\ngot:\n%#v", expected, o)
 	}
 }
