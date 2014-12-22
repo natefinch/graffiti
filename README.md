@@ -53,13 +53,23 @@ type foo struct {
 }
 ```
 
-### Run (todo)
+### Run
 
-Working on support for a `graffiti run` command that will parse a go file and
-run graffiti commands embedded in comments in the file (much like go generate).
-Then, run-on-save can work for your favorite editor, something like the
-following:
+Graffiti can parse go source files and look for embedded graffiti commands in comments.  
 
-//graffiti: -t MyStruct json,yaml
+Running 
 
-Then whenever you save, graffiti will update the struct tags in this file.
+	graffiti run foo.go
+
+Will parse foo.go and look for comments of the form 
+
+	// graffiti: <command line>
+
+These commands will be run in the order they are found in the file.  Commands in the file are always run with the `graffiti gen` command, and if no target is given, the current file is the default target. Thus, this command embedded in the foo.go file:
+
+	// graffiti: -t MyStruct json,yaml
+
+is equivalent to this command line invocation:
+
+	graffiti gen -t MyStruct json,yaml foo.go
+

@@ -42,7 +42,7 @@ func genCmd() *cobra.Command {
 	var isTempl, dryRun bool
 	cmd.Flags().StringVarP(&types, "types", "t", "", "Generate tags only for these types (comma separated list).")
 	cmd.Flags().StringVarP(&mapping, "map", "m", "", "Map field names to alternate tag names (see help mappings).")
-	cmd.Flags().BoolVarP(&isTempl, "gotemplate", "g", false, "If set, tags is a go template (see help templates).")
+	cmd.Flags().BoolVarP(&isTempl, "format", "f", false, "If set, tags is a go template (see help templates).")
 	cmd.Flags().BoolVarP(&dryRun, "dryrun", "d", false, "If set, changes are written to stdout instead of to the files.")
 
 	addtopics(cmd)

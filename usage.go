@@ -10,7 +10,17 @@ value for a field's tag is the lowercase of the field name. Only exported fields
 have tags generated. `
 
 	runUsage = `
+Reads graffiti commands from a go file and executes them.
 
+For example:
+
+	// graffiti: <command line>
+
+The commands are always passed to the graffiti gen command, and the current file
+is assumed to be the target if no target is given.  If there are multiple
+graffiti commands in the file, all will be run in sequence.  Flags can be used
+as usual, and the embedded CLI supports single and double quotes for arguments
+similar to how /bin/sh works. 
 `
 
 	mappings = `By default, graffiti creates a struct tag for each exported
