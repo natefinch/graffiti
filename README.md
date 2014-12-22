@@ -13,9 +13,9 @@ Usage:
 
 Available Flags:
   -d, --dryrun		If set, changes are written to stdout instead of to the files.
-  -f, --format <template>	If set, tags is a go template (see help templates).
-  -m, --map	<map>	Map field names to alternate tag names (see help mappings).
-  -t, --types		Generate tags only for these types (comma separated list).
+  -f, --format		If set, tags is a go template (see help templates).
+  -m, --map=""		Map field names to alternate tag names (see help mappings).
+  -t, --types=""	Generate tags only for these types (comma separated list).
 ```
 
 Generates struct tags for a specific target (file or directory).
