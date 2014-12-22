@@ -3,9 +3,8 @@ graffiti
 
 Graffiti is a tool to automatically add struct tags to fields in your go code.
 
-This repo is still under heavy development and should not be used by anyone.
-
-### Gen
+### Gen Command
+Generates struct tags for a specific target (file or directory).
 
 ```
 Usage: 
@@ -17,8 +16,6 @@ Available Flags:
   -m, --map=""		Map field names to alternate tag names (see help mappings).
   -t, --types=""	Generate tags only for these types (comma separated list).
 ```
-
-Generates struct tags for a specific target (file or directory).
 
 If no target is given, all go files in the current directory are processed. By
 default tags is a comma-separated list of schema names like json or yaml. The
@@ -53,23 +50,28 @@ type foo struct {
 }
 ```
 
-### Run
+### Run Command
 
-Graffiti can parse go source files and look for embedded graffiti commands in comments.  
+Reads graffiti commands from a go file and executes them.
 
-Running 
+```
+Usage: 
+  graffiti run <file>
+```
 
-	graffiti run foo.go
+The run command parses go files, looking for comments with the prefix `graffiti:
+`. All text following this prefix is used as the command line for graffiti.
 
-Will parse foo.go and look for comments of the form 
+The commands are always passed to the graffiti gen command, and the current file
+is assumed to be the target if no target is given.  If there are multiple
+graffiti commands in the file, all will be run in sequence.  Flags can be used
+as usual, and the embedded CLI supports single and double quotes for arguments
+similar to how /bin/sh works.
 
-	// graffiti: <command line>
-
-These commands will be run in the order they are found in the file.  Commands in the file are always run with the `graffiti gen` command, and if no target is given, the current file is the default target. Thus, this command embedded in the foo.go file:
+For example this command embedded in the foo.go file:
 
 	// graffiti: -t MyStruct json,yaml
 
 is equivalent to this command line invocation:
 
 	graffiti gen -t MyStruct json,yaml foo.go
-
