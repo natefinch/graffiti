@@ -82,13 +82,18 @@ type bar struct {
 }
 
 func TestGenType(t *testing.T) {
-	o := Options{Tags: []string{"json"}, Types: []string{"bar"}}
+	o := Options{Tags: []string{"json"}, Types: []string{"bar", "embed"}}
 	fset := token.NewFileSet()
 
 	code := `package foo
 
 type bar struct {
 	ID string
+	embed
+}
+
+type embed struct {
+	Name string
 }
 
 type not struct {
@@ -109,6 +114,11 @@ type not struct {
 
 type bar struct {
 	ID string ` + "`" + `json:"id"` + "`" + `
+	embed
+}
+
+type embed struct {
+	Name string ` + "`" + `json:"name"` + "`" + `
 }
 
 type not struct {

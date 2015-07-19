@@ -119,8 +119,8 @@ func (v *visitor) Visit(n ast.Node) ast.Visitor {
 				return v
 			}
 			for _, f := range s.Fields.List {
-				if len(f.Names) > 1 {
-					// skip fields declared as a, b, c int
+				if len(f.Names) != 1 {
+					// skip fields declared as a, b, c int and embedded types
 					continue
 				}
 				name := f.Names[0].Name
