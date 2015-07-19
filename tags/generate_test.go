@@ -15,9 +15,10 @@ func TestGenBasic(t *testing.T) {
 package foo
 
 type bar struct {
-	ID      string
-	Name    string
-	private string
+	ID       string
+	Name     string
+	LastName string
+	private  string
 }
 `[1:]
 
@@ -33,9 +34,10 @@ type bar struct {
 	expected := `package foo
 
 type bar struct {
-	ID      string ` + "`" + `json:"id" yaml:"id"` + "`" + `
-	Name    string ` + "`" + `json:"name" yaml:"name"` + "`" + `
-	private string
+	ID       string ` + "`" + `json:"id" yaml:"id"` + "`" + `
+	Name     string ` + "`" + `json:"name" yaml:"name"` + "`" + `
+	LastName string ` + "`" + `json:"lastName" yaml:"lastName"` + "`" + `
+	private  string
 }
 `
 

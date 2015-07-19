@@ -164,7 +164,7 @@ func (v visitor) gen(name string) (string, error) {
 	if m, ok := v.Mapping[name]; ok {
 		name = m
 	} else {
-		name = strings.ToLower(name)
+		name = TitleToCamel(name)
 	}
 	if len(v.Tags) > 0 {
 		vals := make([]string, len(v.Tags))
