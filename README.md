@@ -1,7 +1,14 @@
-graffiti
+graffiti v2
 ========
 
 Graffiti is a tool to automatically add struct tags to fields in your go code.
+
+### Install as a standalone tool
+
+```
+go install github.com/0x090909/graffiti 
+```
+
 
 ### Gen Command
 Generates struct tags for a specific target (file or directory).
